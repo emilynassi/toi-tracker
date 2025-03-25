@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { TOITracker } from './TOITracker';
 
 type Team = {
   id: number;
@@ -61,6 +62,9 @@ export default function NHLStats() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [gameLimit, setGameLimit] = useState<number>(10);
+
+  // Prepare data for TOITracker
+  const [playerGameData, setPlayerGameData] = useState<any[]>([]);
 
   // Fetch teams on component mount
   useEffect(() => {
@@ -232,6 +236,55 @@ export default function NHLStats() {
     fetchTimeOnIce();
   }, [selectedPlayer, selectedGame, players, games]);
 
+  // Fetch player's time on ice history for multiple games when a player is selected
+  useEffect(() => {
+    if (!selectedPlayer) return;
+
+    async function fetchPlayerGameHistory() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log(
+          `Fetching game history for player ${selectedPlayer} with limit ${gameLimit}`
+        );
+
+        // Fetch the player's games data with the user-selected game limit
+        const response = await fetch(
+          `/api/nhl/player/${selectedPlayer}/gameLog?limit=${gameLimit}`
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`API error (${response.status}): ${errorText}`);
+          throw new Error(`API returned status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Player game history:', data);
+
+        if (data.games && data.games.length > 0) {
+          console.log(
+            `Received ${data.games.length} games with time on ice data`
+          );
+          console.log('First game sample:', data.games[0]);
+          setPlayerGameData(data.games);
+        } else {
+          console.warn('No game data received or empty games array');
+          setPlayerGameData([]);
+        }
+      } catch (err) {
+        console.error('Error fetching player game history:', err);
+        setError('Could not load player game history. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Always fetch player game history when a player is selected or game limit changes
+    fetchPlayerGameHistory();
+  }, [selectedPlayer, gameLimit]);
+
   const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTeam(e.target.value);
   };
@@ -245,7 +298,53 @@ export default function NHLStats() {
   };
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setGameLimit(Number(e.target.value));
+    const newLimit = Number(e.target.value);
+    console.log(`Changing game limit to ${newLimit}`);
+    setGameLimit(newLimit);
+  };
+
+  // Get player details for the selected player
+  const selectedPlayerDetails = selectedPlayer
+    ? players.find((p) => p.id === selectedPlayer)
+    : null;
+
+  // Render TOITracker only when we have player game data
+  const renderTOITracker = () => {
+    if (!selectedPlayerDetails) return null;
+
+    const hasGameData = playerGameData.length > 0;
+
+    if (!hasGameData && !timeOnIce) {
+      return (
+        <div className="border-4 border-gray-200 p-4 rounded-md text-center my-6">
+          <p className="text-lg font-medium text-gray-600">
+            No time on ice data available for this player. Try selecting a
+            different player or adjusting the game limit.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <TOITracker
+        playerName={`${selectedPlayerDetails.firstName.default} ${selectedPlayerDetails.lastName.default}`}
+        playerNumber={selectedPlayerDetails.sweaterNumber}
+        position={selectedPlayerDetails.positionCode}
+        team={selectedTeam}
+        games={playerGameData}
+        singleGameData={
+          timeOnIce
+            ? {
+                timeOnIce: timeOnIce.timeOnIce,
+                evenTimeOnIce: timeOnIce.evenTimeOnIce,
+                powerPlayTimeOnIce: timeOnIce.powerPlayTimeOnIce,
+                shorthandedTimeOnIce: timeOnIce.shorthandedTimeOnIce,
+                shifts: timeOnIce.shifts,
+              }
+            : undefined
+        }
+      />
+    );
   };
 
   return (
@@ -322,16 +421,19 @@ export default function NHLStats() {
         </div>
       )}
 
+      {/* Optional game selection - no longer required for TOITracker */}
       {games.length > 0 && (
         <div className="mb-4">
-          <label className="block mb-2 font-medium">Select Game:</label>
+          <label className="block mb-2 font-medium">
+            Select Specific Game (Optional):
+          </label>
           <select
             className="block w-full p-2 border rounded-md"
             value={selectedGame || ''}
             onChange={handleGameChange}
             disabled={loading}
           >
-            <option value="">Select a game</option>
+            <option value="">View game history instead</option>
             {games.map((game) => (
               <option
                 key={game.id}
@@ -351,7 +453,11 @@ export default function NHLStats() {
         </div>
       )}
 
-      {timeOnIce && (
+      {selectedPlayerDetails && (
+        <div className="mt-4 mb-8">{renderTOITracker()}</div>
+      )}
+
+      {timeOnIce && !selectedPlayerDetails && (
         <div className="mt-6 bg-white p-4 rounded-md shadow">
           <h2 className="text-xl font-semibold mb-3">
             {timeOnIce.name} - Time on Ice Stats

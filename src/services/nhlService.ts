@@ -225,17 +225,17 @@ export async function getPlayerTimeOnIceStats(
       ...(boxscore.playerByGameStats.awayTeam?.defense || []),
       ...(boxscore.playerByGameStats.awayTeam?.goalies || []),
     ];
-
     // Search in home team
-    playerFound = homeTeamPlayers.find(
-      (player) => Number(player.playerId) === playerId
-    );
+    playerFound =
+      homeTeamPlayers.find((player) => Number(player.playerId) === playerId) ||
+      null;
 
     // If not found in home team, search in away team
     if (!playerFound) {
-      playerFound = awayTeamPlayers.find(
-        (player) => Number(player.playerId) === playerId
-      );
+      playerFound =
+        awayTeamPlayers.find(
+          (player) => Number(player.playerId) === playerId
+        ) || null;
     }
 
     if (playerFound) {
@@ -320,19 +320,22 @@ export async function getPlayerTimeOnIceStats(
       throw new Error(`Player with ID ${playerId} not found in game ${gameId}`);
     }
 
+    // Now playerStats is definitely non-null
+    const validPlayerStats = playerStats as PlayerStats;
+
     console.log(
-      `Found stats for player ${playerStats.name?.default || 'Unknown'}`
+      `Found stats for player ${validPlayerStats.name?.default || 'Unknown'}`
     );
 
     return {
-      playerId: playerStats.playerId,
-      name: playerStats.name?.default || `Player #${playerId}`,
+      playerId: validPlayerStats.playerId,
+      name: validPlayerStats.name?.default || `Player #${playerId}`,
       gameId,
-      timeOnIce: playerStats.timeOnIce || '00:00',
-      evenTimeOnIce: playerStats.evenTimeOnIce || '00:00',
-      powerPlayTimeOnIce: playerStats.powerPlayTimeOnIce || '00:00',
-      shorthandedTimeOnIce: playerStats.shorthandedTimeOnIce || '00:00',
-      shifts: playerStats.shifts || 0,
+      timeOnIce: validPlayerStats.timeOnIce || '00:00',
+      evenTimeOnIce: validPlayerStats.evenTimeOnIce || '00:00',
+      powerPlayTimeOnIce: validPlayerStats.powerPlayTimeOnIce || '00:00',
+      shorthandedTimeOnIce: validPlayerStats.shorthandedTimeOnIce || '00:00',
+      shifts: validPlayerStats.shifts || 0,
     };
   }
 }
