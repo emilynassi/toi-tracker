@@ -8,6 +8,7 @@ const samplePlayerData = {
   number: 97,
   position: 'C',
   team: 'EDM',
+  playerId: '8478402',
   games: [
     {
       gameId: '2023020123',
@@ -84,6 +85,7 @@ export default function TOITestPage() {
           position={samplePlayerData.position}
           team={samplePlayerData.team}
           games={samplePlayerData.games}
+          playerId={samplePlayerData.playerId}
         />
       </div>
 
@@ -95,6 +97,7 @@ export default function TOITestPage() {
           position={samplePlayerData.position}
           team={samplePlayerData.team}
           games={[]}
+          playerId={samplePlayerData.playerId}
           singleGameData={sampleSingleGameData}
         />
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { getTeamNeoColors, TeamColors, getTeamNames } from '../types/colors';
 import { NeoButton } from './ui/NeoButton';
+import { NeoSelect } from './ui/NeoSelect';
 
 // Define types for the props
 type PlayerGameData = {
@@ -32,6 +33,7 @@ type TOITrackerProps = {
   team?: string;
   position?: string;
   games: PlayerGameData[];
+  playerId?: string;
   singleGameData?: {
     timeOnIce: string;
     evenTimeOnIce: string;
@@ -115,18 +117,62 @@ const formatDateInEasternTime = (dateString: string): string => {
   }
 };
 
+// Game type labels for the selector
+const GAME_TYPES = [
+  { id: 2, label: 'Regular Season' },
+  { id: 3, label: 'Playoffs' },
+];
+
 export function TOITracker({
   playerName,
   playerNumber = 0,
   team = '',
   position = '',
   games = [],
+  playerId,
   singleGameData,
 }: TOITrackerProps) {
   const [highlightedGame, setHighlightedGame] = useState<number | null>(null);
+  const [selectedGameType, setSelectedGameType] = useState<number>(0); // 0 = Regular Season (2), 1 = Playoffs (3)
+  const [gamesData, setGamesData] = useState<PlayerGameData[]>(games);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // Load game data based on game type when it changes
+  useEffect(() => {
+    if (!playerId) {
+      setGamesData(games);
+      return;
+    }
+
+    const fetchGameData = async () => {
+      try {
+        setLoading(true);
+        const gameTypeId = GAME_TYPES[selectedGameType].id;
+        const response = await fetch(
+          `/api/nhl/player/${playerId}/gameLog?gameType=${gameTypeId}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch game data: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.games && Array.isArray(data.games)) {
+          setGamesData(data.games);
+        }
+      } catch (error) {
+        console.error('Error fetching game data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGameData();
+  }, [playerId, selectedGameType]);
 
   // Log the games data for debugging
-  console.log('Games data:', games);
+  console.log('Games data:', gamesData);
 
   // Get team colors based on team abbreviation (fallback to default if not provided)
   const teamAbbr = team || 'EDM'; // Default to Oilers if no team provided
@@ -165,7 +211,7 @@ export function TOITracker({
   );
 
   // Format game data for the chart
-  const chartData = games.map((game) => {
+  const chartData = gamesData.map((game) => {
     // Extract the team abbreviation from opponent
     let opponentAbbr = '';
 
@@ -397,8 +443,59 @@ export function TOITracker({
           </div>
         </div>
 
+        {/* Game Type Selector */}
+        {playerId && (
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <div className="font-bold border-b-4 border-black">
+                GAME TYPE:
+              </div>
+              <div className="flex gap-3">
+                {GAME_TYPES.map((type, index) => {
+                  const isActive = selectedGameType === index;
+                  return (
+                    <div
+                      key={type.id}
+                      className="relative"
+                    >
+                      <NeoButton
+                        onClick={() => setSelectedGameType(index)}
+                        primaryColor={isActive ? primaryColor : 'white'}
+                        textColor={
+                          isActive
+                            ? useWhiteText
+                              ? 'white'
+                              : 'black'
+                            : 'black'
+                        }
+                        size="sm"
+                        className={`${
+                          isActive
+                            ? 'transform -rotate-1 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
+                            : 'opacity-90 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)]'
+                        }`}
+                      >
+                        {type.label}
+                        {isActive && <span className="ml-1">★</span>}
+                      </NeoButton>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="h-72 w-full border-4 border-black p-4 bg-white mb-6 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="text-xl font-black">LOADING GAMES...</div>
+          </div>
+        )}
+
         {/* Chart Section */}
-        {chartData.length > 0 ? (
+        {!loading && chartData.length > 0 ? (
           <div className="h-72 w-full border-4 border-black p-4 bg-white mb-6">
             <ResponsiveContainer
               width="100%"
@@ -462,18 +559,18 @@ export function TOITracker({
               </BarChart>
             </ResponsiveContainer>
           </div>
-        ) : singleGameData ? (
+        ) : !loading && singleGameData ? (
           <div className="mb-6 p-4 border-4 border-black bg-white">
             <p className="text-xl font-bold mb-4">Single Game Data</p>
           </div>
-        ) : (
+        ) : !loading ? (
           <div className="mb-6 p-4 border-4 border-black bg-white">
             <p className="text-xl font-bold">No game data available</p>
           </div>
-        )}
+        ) : null}
 
         {/* Game List or Single Game Detail */}
-        {chartData.length > 0 ? (
+        {!loading && chartData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {chartData.map((game, index) => {
               // Use opponent team colors when highlighted
@@ -516,7 +613,7 @@ export function TOITracker({
               );
             })}
           </div>
-        ) : singleGameData ? (
+        ) : !loading && singleGameData ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border-4 border-black p-4 bg-white">
               <h3 className="font-bold mb-2">Time on Ice</h3>

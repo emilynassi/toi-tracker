@@ -14,8 +14,21 @@ export async function GET(
     const playerId = params.id;
     const searchParams = request.nextUrl.searchParams;
     const limit = searchParams.get('limit') || '10';
+    const gameType = searchParams.get('gameType') || '2'; // Default to regular season (2), playoffs is (3)
+    let season = searchParams.get('season') || 'now'; // Default to current season
 
-    console.log(`Fetching game log for player ${playerId} with limit ${limit}`);
+    // If season is 'now', get the current season in the format 20232024
+    if (season === 'now') {
+      const date = new Date();
+      const year = date.getFullYear();
+      // NHL season runs from October to June, so if it's before July, it's the previous year's season
+      const seasonStartYear = date.getMonth() < 6 ? year - 1 : year;
+      season = `${seasonStartYear}${seasonStartYear + 1}`;
+    }
+
+    console.log(
+      `Fetching game log for player ${playerId} with limit ${limit}, gameType ${gameType}, season ${season}`
+    );
 
     // Fetch the player details first to get their name
     const playerResponse = await fetch(
@@ -34,7 +47,7 @@ export async function GET(
 
     // Now fetch the player's game log
     const gameLogResponse = await fetch(
-      `https://api-web.nhle.com/v1/player/${playerId}/game-log/now`
+      `https://api-web.nhle.com/v1/player/${playerId}/game-log/${season}/${gameType}`
     );
 
     if (!gameLogResponse.ok) {
@@ -115,6 +128,7 @@ export async function GET(
         name: `${playerData.firstName.default} ${playerData.lastName.default}`,
       },
       games,
+      gameTypeId: parseInt(gameType),
     });
   } catch (error) {
     console.error('Error fetching player game log:', error);

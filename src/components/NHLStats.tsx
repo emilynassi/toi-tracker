@@ -332,6 +332,7 @@ export default function NHLStats() {
         position={selectedPlayerDetails.positionCode}
         team={selectedTeam}
         games={playerGameData}
+        playerId={selectedPlayer?.toString()}
         singleGameData={
           timeOnIce
             ? {
