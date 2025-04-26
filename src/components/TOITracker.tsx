@@ -24,6 +24,7 @@ type TOITrackerProps = {
   position?: string;
   games: PlayerGameData[];
   playerId?: string;
+  gameLimit?: number;
   singleGameData?: {
     timeOnIce: string;
     evenTimeOnIce: string;
@@ -120,6 +121,7 @@ export function TOITracker({
   position = '',
   games = [],
   playerId,
+  gameLimit = 10,
   singleGameData,
 }: TOITrackerProps) {
   const [highlightedGame, setHighlightedGame] = useState<number | null>(null);
@@ -140,7 +142,7 @@ export function TOITracker({
       setLoading(true);
       const gameType = GAME_TYPES[selectedGameType].id;
       const response = await fetch(
-        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}`
+        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}`
       );
       if (!response.ok) throw new Error('Failed to fetch data');
       const data = await response.json();
@@ -152,12 +154,12 @@ export function TOITracker({
     }
   };
 
-  // Fetch data when player ID or game type changes
+  // Fetch data when player ID, game type, or game limit changes
   useEffect(() => {
     if (playerId) {
       fetchGameData();
     }
-  }, [playerId, selectedGameType]);
+  }, [playerId, selectedGameType, gameLimit]);
 
   // Log the games data for debugging
   console.log('Games data:', gamesData);
