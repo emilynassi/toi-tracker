@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -14,19 +14,9 @@ import {
 import { getTeamNeoColors, TeamColors, getTeamNames } from '../types/colors';
 import { NeoButton } from './ui/NeoButton';
 import { NeoSelect } from './ui/NeoSelect';
+import { PlayerGameData } from '../types/nhl';
 
 // Define types for the props
-type PlayerGameData = {
-  gameId: string;
-  gameDate: string;
-  opponent: string;
-  timeOnIce: string;
-  evenTimeOnIce: string;
-  powerPlayTimeOnIce: string;
-  shorthandedTimeOnIce: string;
-  shifts: number;
-};
-
 type TOITrackerProps = {
   playerName: string;
   playerNumber?: number;
@@ -133,42 +123,40 @@ export function TOITracker({
   singleGameData,
 }: TOITrackerProps) {
   const [highlightedGame, setHighlightedGame] = useState<number | null>(null);
-  const [selectedGameType, setSelectedGameType] = useState<number>(0); // 0 = Regular Season (2), 1 = Playoffs (3)
   const [gamesData, setGamesData] = useState<PlayerGameData[]>(games);
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedGameType, setSelectedGameType] = useState<number>(0); // 0 for Regular Season, 1 for Playoffs
 
-  // Load game data based on game type when it changes
+  // Update games data when props change
   useEffect(() => {
-    if (!playerId) {
-      setGamesData(games);
-      return;
+    setGamesData(games);
+  }, [games]);
+
+  // Function to fetch games data based on the selected game type
+  const fetchGameData = async () => {
+    if (!playerId) return;
+
+    try {
+      setLoading(true);
+      const gameType = GAME_TYPES[selectedGameType].id;
+      const response = await fetch(
+        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch data');
+      const data = await response.json();
+      setGamesData(data.games || []);
+    } catch (error) {
+      console.error('Error fetching game data:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const fetchGameData = async () => {
-      try {
-        setLoading(true);
-        const gameTypeId = GAME_TYPES[selectedGameType].id;
-        const response = await fetch(
-          `/api/nhl/player/${playerId}/gameLog?gameType=${gameTypeId}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch game data: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (data.games && Array.isArray(data.games)) {
-          setGamesData(data.games);
-        }
-      } catch (error) {
-        console.error('Error fetching game data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGameData();
+  // Fetch data when player ID or game type changes
+  useEffect(() => {
+    if (playerId) {
+      fetchGameData();
+    }
   }, [playerId, selectedGameType]);
 
   // Log the games data for debugging
@@ -431,6 +419,49 @@ export function TOITracker({
             <p className="text-sm font-bold">AVG MINUTES</p>
           </div>
         </div>
+
+        {/* Game Type Selector */}
+        {playerId && (
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <div className="font-bold border-b-4 border-black">
+                GAME TYPE:
+              </div>
+              <div className="flex gap-3">
+                {GAME_TYPES.map((type, index) => {
+                  const isActive = selectedGameType === index;
+                  return (
+                    <div
+                      key={type.id}
+                      className="relative"
+                    >
+                      <NeoButton
+                        onClick={() => setSelectedGameType(index)}
+                        primaryColor={isActive ? primaryColor : 'white'}
+                        textColor={
+                          isActive
+                            ? useWhiteText
+                              ? 'white'
+                              : 'black'
+                            : 'black'
+                        }
+                        size="sm"
+                        className={`${
+                          isActive
+                            ? 'transform -rotate-1 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
+                            : 'opacity-90 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)]'
+                        }`}
+                      >
+                        {type.label}
+                        {isActive && <span className="ml-1">★</span>}
+                      </NeoButton>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Chart Section */}
         {!loading && chartData.length > 0 ? (

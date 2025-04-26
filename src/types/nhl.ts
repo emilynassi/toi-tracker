@@ -275,3 +275,15 @@ export interface PlayerTimeOnIceStats {
   shorthandedTimeOnIce: string;
   shifts: number;
 }
+
+// Player game data for TOITracker component
+export interface PlayerGameData {
+  gameId: string;
+  gameDate: string;
+  opponent: string;
+  timeOnIce: string;
+  evenTimeOnIce: string;
+  powerPlayTimeOnIce: string;
+  shorthandedTimeOnIce: string;
+  shifts: number;
+}
