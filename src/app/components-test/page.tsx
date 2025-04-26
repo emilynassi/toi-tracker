@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import { NeoButton } from '@/components/ui/NeoButton';
+import { NeoSelect } from '@/components/ui/NeoSelect';
 
 export default function ComponentsTestPage() {
   return (
@@ -75,6 +78,22 @@ export default function ComponentsTestPage() {
           <NeoButton type="button">Button Type</NeoButton>
           <NeoButton type="submit">Submit Type</NeoButton>
           <NeoButton type="reset">Reset Type</NeoButton>
+        </div>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">NeoSelect Examples</h2>
+        <div className="flex flex-wrap gap-4">
+          <NeoSelect
+            items={['Option 1', 'Option 2', 'Option 3']}
+            value={0}
+            onChange={(value) => console.log('Selected:', value)}
+          />
+          <NeoSelect
+            items={['Red', 'Green', 'Blue']}
+            value={1}
+            onChange={(value) => console.log('Selected:', value)}
+          />
         </div>
       </section>
     </div>
