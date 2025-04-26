@@ -8,6 +8,8 @@ interface NeoSelectProps {
   onChange?: (value: number) => void; // Callback when selection changes
   className?: string;
   style?: React.CSSProperties;
+  disabled?: boolean; // Whether the select is disabled
+  placeholder?: string; // Optional placeholder text when no item is selected
 }
 
 const NeoSelect = ({
@@ -16,6 +18,8 @@ const NeoSelect = ({
   onChange,
   className = '',
   style = {},
+  disabled = false,
+  placeholder = 'Select an option...',
 }: NeoSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -35,7 +39,12 @@ const NeoSelect = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedItem = value !== undefined ? items[value] : items[0];
+  // Determine what to display in the button
+  const isPlaceholder = value === undefined;
+  const displayText =
+    isPlaceholder || items.length === 0 ? placeholder : items[value as number];
+  const placeholderClass =
+    isPlaceholder || items.length === 0 ? 'text-gray-500 italic' : '';
 
   return (
     <div
@@ -44,15 +53,18 @@ const NeoSelect = ({
       ref={dropdownRef}
     >
       <button
-        className="appearance-none bg-transparent border-2 border-black font-bold py-2 pl-4 pr-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black w-full"
-        onClick={() => setIsOpen(!isOpen)}
+        className={`appearance-none bg-transparent border-2 border-black font-bold py-2 pl-4 pr-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black w-full ${
+          disabled ? 'opacity-60 cursor-not-allowed' : ''
+        } ${placeholderClass}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
         style={{
           WebkitAppearance: 'none',
           MozAppearance: 'none',
           appearance: 'none',
         }}
       >
-        {selectedItem}
+        {displayText}
       </button>
       <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
         <svg
@@ -72,7 +84,7 @@ const NeoSelect = ({
         </svg>
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && items.length > 0 && (
         <div className="absolute z-10 w-full mt-1 bg-white border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
           {items.map((item, index) => (
             <button

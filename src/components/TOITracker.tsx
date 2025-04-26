@@ -369,17 +369,6 @@ export function TOITracker({
 
   return (
     <div className="font-sans max-w-4xl mx-auto p-6">
-      {/* Header Section */}
-      <div className="mb-12 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
-        <h1 className="text-5xl font-black mb-2 tracking-tight">
-          ICE TIME TRACKER
-        </h1>
-        <div className="h-3 w-40 bg-black mb-4"></div>
-        <p className="text-xl">
-          Track your favorite players' time on ice stats!
-        </p>
-      </div>
-
       {/* Player Card */}
       <div
         className={`border-8 border-black bg-white p-6 mb-10 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]`}
@@ -442,57 +431,6 @@ export function TOITracker({
             <p className="text-sm font-bold">AVG MINUTES</p>
           </div>
         </div>
-
-        {/* Game Type Selector */}
-        {playerId && (
-          <div className="mb-6">
-            <div className="flex flex-wrap items-center gap-3 mb-2">
-              <div className="font-bold border-b-4 border-black">
-                GAME TYPE:
-              </div>
-              <div className="flex gap-3">
-                {GAME_TYPES.map((type, index) => {
-                  const isActive = selectedGameType === index;
-                  return (
-                    <div
-                      key={type.id}
-                      className="relative"
-                    >
-                      <NeoButton
-                        onClick={() => setSelectedGameType(index)}
-                        primaryColor={isActive ? primaryColor : 'white'}
-                        textColor={
-                          isActive
-                            ? useWhiteText
-                              ? 'white'
-                              : 'black'
-                            : 'black'
-                        }
-                        size="sm"
-                        className={`${
-                          isActive
-                            ? 'transform -rotate-1 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
-                            : 'opacity-90 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)]'
-                        }`}
-                      >
-                        {type.label}
-                        {isActive && <span className="ml-1">★</span>}
-                      </NeoButton>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="h-72 w-full border-4 border-black p-4 bg-white mb-6 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
-            <div className="text-xl font-black">LOADING GAMES...</div>
-          </div>
-        )}
 
         {/* Chart Section */}
         {!loading && chartData.length > 0 ? (
@@ -567,7 +505,12 @@ export function TOITracker({
           <div className="mb-6 p-4 border-4 border-black bg-white">
             <p className="text-xl font-bold">No game data available</p>
           </div>
-        ) : null}
+        ) : (
+          <div className="h-72 w-full border-4 border-black p-4 bg-white mb-6 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="text-xl font-black">LOADING GAMES...</div>
+          </div>
+        )}
 
         {/* Game List or Single Game Detail */}
         {!loading && chartData.length > 0 ? (

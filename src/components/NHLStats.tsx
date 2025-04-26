@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { TOITracker } from './TOITracker';
+import { NeoSelect } from './ui/NeoSelect';
 
 type Team = {
   id: number;
@@ -285,22 +286,33 @@ export default function NHLStats() {
     fetchPlayerGameHistory();
   }, [selectedPlayer, gameLimit]);
 
-  const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedTeam(e.target.value);
+  const handleTeamChange = (index: number) => {
+    if (index >= 0 && index < teams.length) {
+      setSelectedTeam(teams[index].abbrev);
+    }
   };
 
-  const handlePlayerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedPlayer(Number(e.target.value));
+  const handlePlayerChange = (index: number) => {
+    if (index >= 0 && index < players.length) {
+      setSelectedPlayer(players[index].id);
+    }
   };
 
-  const handleGameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedGame(Number(e.target.value));
+  const handleGameChange = (index: number) => {
+    if (index === 0) {
+      setSelectedGame(null); // "View game history" option
+    } else if (index > 0 && index <= games.length) {
+      setSelectedGame(games[index - 1].id);
+    }
   };
 
-  const handleLimitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLimit = Number(e.target.value);
-    console.log(`Changing game limit to ${newLimit}`);
-    setGameLimit(newLimit);
+  const handleLimitChange = (index: number) => {
+    const limitOptions = [5, 10, 20, 50, 100];
+    if (index >= 0 && index < limitOptions.length) {
+      const newLimit = limitOptions[index];
+      console.log(`Changing game limit to ${newLimit}`);
+      setGameLimit(newLimit);
+    }
   };
 
   // Get player details for the selected player
@@ -308,183 +320,157 @@ export default function NHLStats() {
     ? players.find((p) => p.id === selectedPlayer)
     : null;
 
-  // Render TOITracker only when we have player game data
-  const renderTOITracker = () => {
-    if (!selectedPlayerDetails) return null;
+  // Prepare selector items for TOITracker
+  const teamItems = teams.map((team) => team.name);
+  const playerItems = players.map(
+    (player) =>
+      `${player.firstName.default} ${player.lastName.default} (#${player.sweaterNumber}) - ${player.positionCode}`
+  );
+  const gameItems = [
+    'View game history instead',
+    ...games.map(
+      (game) =>
+        `${new Date(game.gameDate).toLocaleDateString()} - ${
+          game.awayTeam.abbrev
+        } @ ${game.homeTeam.abbrev}`
+    ),
+  ];
+  const limitItems = [
+    '5 games',
+    '10 games',
+    '20 games',
+    '50 games',
+    'All games',
+  ];
 
-    const hasGameData = playerGameData.length > 0;
-
-    if (!hasGameData && !timeOnIce) {
-      return (
-        <div className="border-4 border-gray-200 p-4 rounded-md text-center my-6">
-          <p className="text-lg font-medium text-gray-600">
-            No time on ice data available for this player. Try selecting a
-            different player or adjusting the game limit.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <TOITracker
-        playerName={`${selectedPlayerDetails.firstName.default} ${selectedPlayerDetails.lastName.default}`}
-        playerNumber={selectedPlayerDetails.sweaterNumber}
-        position={selectedPlayerDetails.positionCode}
-        team={selectedTeam}
-        games={playerGameData}
-        playerId={selectedPlayer?.toString()}
-        singleGameData={
-          timeOnIce
-            ? {
-                timeOnIce: timeOnIce.timeOnIce,
-                evenTimeOnIce: timeOnIce.evenTimeOnIce,
-                powerPlayTimeOnIce: timeOnIce.powerPlayTimeOnIce,
-                shorthandedTimeOnIce: timeOnIce.shorthandedTimeOnIce,
-                shifts: timeOnIce.shifts,
-              }
-            : undefined
-        }
-      />
-    );
-  };
+  // Find indices for the current selections
+  const teamIndex = teams.findIndex((team) => team.abbrev === selectedTeam);
+  const playerIndex = players.findIndex(
+    (player) => player.id === selectedPlayer
+  );
+  const gameIndex = selectedGame
+    ? games.findIndex((game) => game.id === selectedGame) + 1 // +1 for the "View history" option
+    : 0;
+  const limitOptions = [5, 10, 20, 50, 100];
+  const limitIndex = limitOptions.indexOf(gameLimit);
 
   return (
-    <div className="p-4 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">NHL Time on Ice Tracker</h1>
+    <div className="p-4 max-w-4xl mx-auto font-sans">
+      {/* Neo-brutalist Header with selectors */}
+      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+        <h1 className="text-5xl font-black mb-2 tracking-tight">
+          ICE TIME TRACKER
+        </h1>
+        <div className="h-3 w-40 bg-black mb-4"></div>
+        <p className="text-xl mb-6">
+          Track your favorite players' time on ice stats!
+        </p>
 
-      {error && (
-        <div
-          className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
-          role="alert"
-        >
-          <p>{error}</p>
+        {error && (
+          <div
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6"
+            role="alert"
+          >
+            <p>{error}</p>
+          </div>
+        )}
+
+        {/* Selectors in the header */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-6 border-t-4 border-black">
+          <div className="selector-group">
+            <div className="font-bold text-sm mb-2">TEAM</div>
+            <NeoSelect
+              items={teamItems}
+              value={teamIndex >= 0 ? teamIndex : undefined}
+              onChange={handleTeamChange}
+              className="w-full"
+              placeholder="Select a team..."
+            />
+          </div>
+
+          <div className="selector-group">
+            <div className="font-bold text-sm mb-2">PLAYER</div>
+            <NeoSelect
+              items={playerItems}
+              value={playerIndex >= 0 ? playerIndex : undefined}
+              onChange={handlePlayerChange}
+              className="w-full"
+              disabled={players.length === 0}
+              placeholder={
+                selectedTeam ? 'Select a player...' : 'First select a team...'
+              }
+            />
+          </div>
+
+          <div className="selector-group">
+            <div className="font-bold text-sm mb-2">GAMES TO SHOW</div>
+            <NeoSelect
+              items={limitItems}
+              value={limitIndex >= 0 ? limitIndex : undefined}
+              onChange={handleLimitChange}
+              className="w-full"
+              placeholder="Choose number of games..."
+            />
+          </div>
+
+          {/* Specific game selector (Commented out for now) */}
+          {/* <div className="selector-group">
+            <div className="font-bold text-sm mb-2">
+              SPECIFIC GAME (OPTIONAL)
+            </div>
+            <NeoSelect
+              items={gameItems.length > 1 ? gameItems : []}
+              value={gameIndex === 0 && !selectedGame ? undefined : gameIndex}
+              onChange={handleGameChange}
+              className="w-full"
+              disabled={games.length === 0}
+              placeholder={
+                selectedTeam
+                  ? 'Select a specific game...'
+                  : 'First select a team...'
+              }
+            />
+          </div> */}
         </div>
-      )}
 
-      <div className="mb-4">
-        <label className="block mb-2 font-medium">Select Team:</label>
-        <select
-          className="block w-full p-2 border rounded-md"
-          value={selectedTeam}
-          onChange={handleTeamChange}
-          disabled={loading}
-        >
-          <option value="">Select a team</option>
-          {teams.map((team) => (
-            <option
-              key={team.id}
-              value={team.abbrev}
-            >
-              {team.name}
-            </option>
-          ))}
-        </select>
+        {/* Loading indicator */}
+        {loading && (
+          <div className="flex items-center justify-center p-4 mt-6 border-4 border-black">
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
+            <div className="font-bold">LOADING STATS...</div>
+          </div>
+        )}
       </div>
 
-      {selectedTeam && (
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">Games to display:</label>
-          <select
-            className="block w-full p-2 border rounded-md"
-            value={gameLimit}
-            onChange={handleLimitChange}
-            disabled={loading}
-          >
-            <option value="5">5 games</option>
-            <option value="10">10 games</option>
-            <option value="20">20 games</option>
-            <option value="50">50 games</option>
-            <option value="100">All games</option>
-          </select>
-        </div>
+      {/* TOI Display - show when we have player data and not loading */}
+      {selectedPlayerDetails && !loading && (
+        <TOITracker
+          playerName={`${selectedPlayerDetails.firstName.default} ${selectedPlayerDetails.lastName.default}`}
+          playerNumber={selectedPlayerDetails.sweaterNumber}
+          position={selectedPlayerDetails.positionCode}
+          team={selectedTeam}
+          games={playerGameData}
+          playerId={selectedPlayer?.toString()}
+          singleGameData={
+            timeOnIce
+              ? {
+                  timeOnIce: timeOnIce.timeOnIce,
+                  evenTimeOnIce: timeOnIce.evenTimeOnIce,
+                  powerPlayTimeOnIce: timeOnIce.powerPlayTimeOnIce,
+                  shorthandedTimeOnIce: timeOnIce.shorthandedTimeOnIce,
+                  shifts: timeOnIce.shifts,
+                }
+              : undefined
+          }
+        />
       )}
 
-      {players.length > 0 && (
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">Select Player:</label>
-          <select
-            className="block w-full p-2 border rounded-md"
-            value={selectedPlayer || ''}
-            onChange={handlePlayerChange}
-            disabled={loading}
-          >
-            <option value="">Select a player</option>
-            {players.map((player) => (
-              <option
-                key={player.id}
-                value={player.id}
-              >
-                {player.firstName.default} {player.lastName.default} (#
-                {player.sweaterNumber}) - {player.positionCode}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Optional game selection - no longer required for TOITracker */}
-      {games.length > 0 && (
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">
-            Select Specific Game (Optional):
-          </label>
-          <select
-            className="block w-full p-2 border rounded-md"
-            value={selectedGame || ''}
-            onChange={handleGameChange}
-            disabled={loading}
-          >
-            <option value="">View game history instead</option>
-            {games.map((game) => (
-              <option
-                key={game.id}
-                value={game.id}
-              >
-                {new Date(game.gameDate).toLocaleDateString()} -{' '}
-                {game.awayTeam.abbrev} @ {game.homeTeam.abbrev}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {loading && (
-        <div className="text-center my-4">
-          <p>Loading...</p>
-        </div>
-      )}
-
-      {selectedPlayerDetails && (
-        <div className="mt-4 mb-8">{renderTOITracker()}</div>
-      )}
-
-      {timeOnIce && !selectedPlayerDetails && (
-        <div className="mt-6 bg-white p-4 rounded-md shadow">
-          <h2 className="text-xl font-semibold mb-3">
-            {timeOnIce.name} - Time on Ice Stats
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-md p-3">
-              <h3 className="font-medium text-gray-700">Total Time on Ice</h3>
-              <p className="text-2xl">{timeOnIce.timeOnIce}</p>
-            </div>
-            <div className="border rounded-md p-3">
-              <h3 className="font-medium text-gray-700">Even Strength</h3>
-              <p className="text-2xl">{timeOnIce.evenTimeOnIce}</p>
-            </div>
-            <div className="border rounded-md p-3">
-              <h3 className="font-medium text-gray-700">Power Play</h3>
-              <p className="text-2xl">{timeOnIce.powerPlayTimeOnIce}</p>
-            </div>
-            <div className="border rounded-md p-3">
-              <h3 className="font-medium text-gray-700">Shorthanded</h3>
-              <p className="text-2xl">{timeOnIce.shorthandedTimeOnIce}</p>
-            </div>
-            <div className="border rounded-md p-3 col-span-2">
-              <h3 className="font-medium text-gray-700">Shifts</h3>
-              <p className="text-2xl">{timeOnIce.shifts}</p>
-            </div>
-          </div>
+      {/* Show a message when no player is selected */}
+      {!selectedPlayerDetails && !loading && (
+        <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center">
+          <p className="text-2xl font-bold">
+            Select a team and player above to view ice time stats!
+          </p>
         </div>
       )}
     </div>
