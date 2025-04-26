@@ -548,11 +548,11 @@ export function TOITracker({
         ) : null}
       </div>
 
-      {/* Controls */}
-      <div className="flex gap-4 justify-center">
-        <NeoButton variant="primary">NEW PLAYER</NeoButton>
-        <NeoButton variant="secondary">MORE STATS</NeoButton>
-      </div>
+      {/* Controls (WIP) */}
+      {/* <div className="flex gap-4 justify-center">
+        <NeoButton>NEW PLAYER</NeoButton>
+        <NeoButton>MORE STATS</NeoButton>
+      </div> */}
     </div>
   );
 }
