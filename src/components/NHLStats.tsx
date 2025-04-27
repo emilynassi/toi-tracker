@@ -357,7 +357,7 @@ export default function NHLStats() {
   return (
     <div className="p-4 font-sans flex justify-evenly items-start gap-8 flex-wrap">
       {/* Neo-brutalist Header with selectors */}
-      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] xs:flex-[0_0_100%] xl:flex-[0_0_600px] lg:sticky top-0 ">
+      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] xs:flex-[0_0_100%] xl:flex-[0_0_400px] lg:sticky top-0 ">
         <h1 className="text-5xl font-black mb-2 tracking-tight">
           ICE TIME TRACKER
         </h1>
@@ -376,7 +376,7 @@ export default function NHLStats() {
         )}
 
         {/* Selectors in the header */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 pt-6 border-t-4 border-black">
+        <div className="grid grid-cols-1 gap-4 mt-4 pt-6 border-t-4 border-black">
           <div className="selector-group">
             <div className="font-bold text-sm mb-2">TEAM</div>
             <NeoSelect
