@@ -355,9 +355,9 @@ export default function NHLStats() {
   const limitIndex = limitOptions.indexOf(gameLimit);
 
   return (
-    <div className="p-4 font-sans flex justify-evenly items-start gap-8">
+    <div className="p-4 font-sans flex justify-evenly items-start gap-8 flex-wrap">
       {/* Neo-brutalist Header with selectors */}
-      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex-[0_0_600px] sticky top-20">
+      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] xs:flex-[0_0_100%] xl:flex-[0_0_600px] lg:sticky top-0 ">
         <h1 className="text-5xl font-black mb-2 tracking-tight">
           ICE TIME TRACKER
         </h1>
@@ -376,7 +376,7 @@ export default function NHLStats() {
         )}
 
         {/* Selectors in the header */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-6 border-t-4 border-black">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 pt-6 border-t-4 border-black">
           <div className="selector-group">
             <div className="font-bold text-sm mb-2">TEAM</div>
             <NeoSelect
@@ -464,6 +464,14 @@ export default function NHLStats() {
               : undefined
           }
         />
+      )}
+
+      {/* show a section that shows while loading */}
+      {loading && (
+        <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center flex-[1_1_auto] flex justify-center items-center">
+          <p className="text-2xl font-bold">LOADING STATS...</p>
+          <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
+        </div>
       )}
 
       {/* Show a message when no player is selected */}
