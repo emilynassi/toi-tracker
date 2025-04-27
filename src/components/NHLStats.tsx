@@ -355,9 +355,9 @@ export default function NHLStats() {
   const limitIndex = limitOptions.indexOf(gameLimit);
 
   return (
-    <div className="p-4 max-w-4xl mx-auto font-sans">
+    <div className="p-4 font-sans flex justify-evenly items-start gap-8">
       {/* Neo-brutalist Header with selectors */}
-      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex-[0_0_600px] sticky top-20">
         <h1 className="text-5xl font-black mb-2 tracking-tight">
           ICE TIME TRACKER
         </h1>
@@ -468,7 +468,7 @@ export default function NHLStats() {
 
       {/* Show a message when no player is selected */}
       {!selectedPlayerDetails && !loading && (
-        <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center">
+        <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center flex-[1_1_auto]">
           <p className="text-2xl font-bold">
             Select a team and player above to view ice time stats!
           </p>

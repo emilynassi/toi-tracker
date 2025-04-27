@@ -358,7 +358,7 @@ export function TOITracker({
   };
 
   return (
-    <div className="font-sans max-w-4xl mx-auto p-6">
+    <div className="font-sans p-6 flex-[1_1_auto]">
       {/* Player Card */}
       <div
         className={`border-8 border-black bg-white p-6 mb-10 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]`}
