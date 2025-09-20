@@ -354,6 +354,17 @@ export function TOITracker({
         ).toFixed(1)
       : '0.0';
 
+  // Calculate 5-game rolling average (most recent 5 games)
+  const rollingAverage5 =
+    chartData.length > 0
+      ? (
+          chartData
+            .slice(-5) // Get the last 5 games
+            .reduce((sum, game) => sum + game.timeOnIce, 0) /
+          Math.min(chartData.length, 5)
+        ).toFixed(1)
+      : '0.0';
+
   // Format minutes for Y-axis ticks
   const formatYAxis = (value: number) => {
     const minutes = Math.floor(value);
@@ -407,21 +418,39 @@ export function TOITracker({
               )}
             </div>
           </div>
-          <div
-            className="mt-4 md:mt-0 p-4 border-4 border-black transform rotate-2 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]"
-            style={{
-              backgroundColor: tertiaryColor || secondaryColor,
-              color:
-                tertiaryColor === '#FFFFFF' ||
-                tertiaryColor.toLowerCase() === '#fff'
-                  ? '#000'
-                  : useWhiteText
-                  ? '#fff'
-                  : '#000',
-            }}
-          >
-            <p className="text-3xl font-black">{averageTOI}</p>
-            <p className="text-sm font-bold">AVG MINUTES</p>
+          <div className="flex gap-4 mt-4 md:mt-0">
+            <div
+              className="p-4 border-4 border-black transform rotate-2 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]"
+              style={{
+                backgroundColor: tertiaryColor || secondaryColor,
+                color:
+                  tertiaryColor === '#FFFFFF' ||
+                  tertiaryColor.toLowerCase() === '#fff'
+                    ? '#000'
+                    : useWhiteText
+                    ? '#fff'
+                    : '#000',
+              }}
+            >
+              <p className="text-3xl font-black">{averageTOI}</p>
+              <p className="text-sm font-bold">AVG MINUTES</p>
+            </div>
+            <div
+              className="p-4 border-4 border-black transform -rotate-2 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]"
+              style={{
+                backgroundColor: primaryColor,
+                color:
+                  primaryColor === '#FFFFFF' ||
+                  primaryColor.toLowerCase() === '#fff'
+                    ? '#000'
+                    : useWhiteText
+                    ? '#fff'
+                    : '#000',
+              }}
+            >
+              <p className="text-3xl font-black">{rollingAverage5}</p>
+              <p className="text-sm font-bold">LAST 5 AVG</p>
+            </div>
           </div>
         </div>
 
