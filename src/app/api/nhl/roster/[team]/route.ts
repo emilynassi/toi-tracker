@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTeamRoster } from '@/services/nhlService';
+import { getCurrentSeason } from '@/utils/nhlSeasons';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +8,7 @@ export async function GET(
 ) {
   const team = params.team;
   const { searchParams } = new URL(request.url);
-  const season = searchParams.get('season') || '20242025';
+  const season = searchParams.get('season') || getCurrentSeason();
 
   try {
     const rosterData = await getTeamRoster(team, season);

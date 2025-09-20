@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentSeason } from '@/utils/nhlSeasons';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,16 +16,7 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const limit = searchParams.get('limit') || '10';
     const gameType = searchParams.get('gameType') || '2'; // Default to regular season (2), playoffs is (3)
-    let season = searchParams.get('season') || 'now'; // Default to current season
-
-    // If season is 'now', get the current season in the format 20232024
-    if (season === 'now') {
-      const date = new Date();
-      const year = date.getFullYear();
-      // NHL season runs from October to June, so if it's before July, it's the previous year's season
-      const seasonStartYear = date.getMonth() < 6 ? year - 1 : year;
-      season = `${seasonStartYear}${seasonStartYear + 1}`;
-    }
+    const season = searchParams.get('season') || getCurrentSeason();
 
     console.log(
       `Fetching game log for player ${playerId} with limit ${limit}, gameType ${gameType}, season ${season}`

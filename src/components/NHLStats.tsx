@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { TOITracker } from './TOITracker';
 import { NeoSelect } from './ui/NeoSelect';
+import { getAvailableSeasons } from '@/utils/nhlSeasons';
 
 type Team = {
   id: number;
@@ -63,6 +64,7 @@ export default function NHLStats() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [gameLimit, setGameLimit] = useState<number>(10);
+  const [selectedSeason, setSelectedSeason] = useState<string>(getAvailableSeasons()[0].value);
 
   // Prepare data for TOITracker
   const [playerGameData, setPlayerGameData] = useState<any[]>([]);
@@ -86,7 +88,7 @@ export default function NHLStats() {
     fetchTeams();
   }, []);
 
-  // Fetch roster when a team is selected
+  // Fetch roster when a team or season is selected
   useEffect(() => {
     if (!selectedTeam) return;
 
@@ -99,7 +101,7 @@ export default function NHLStats() {
         setSelectedGame(null);
         setTimeOnIce(null);
 
-        const response = await fetch(`/api/nhl/roster/${selectedTeam}`);
+        const response = await fetch(`/api/nhl/roster/${selectedTeam}?season=${selectedSeason}`);
         const data = await response.json();
 
         // Combine all player types
@@ -119,9 +121,9 @@ export default function NHLStats() {
     }
 
     fetchRoster();
-  }, [selectedTeam]);
+  }, [selectedTeam, selectedSeason]);
 
-  // Fetch schedule when a team is selected
+  // Fetch schedule when a team or season is selected
   useEffect(() => {
     if (!selectedTeam) return;
 
@@ -133,7 +135,7 @@ export default function NHLStats() {
         setTimeOnIce(null);
 
         const response = await fetch(
-          `/api/nhl/schedule/${selectedTeam}?limit=${gameLimit}`
+          `/api/nhl/schedule/${selectedTeam}?limit=${gameLimit}&season=${selectedSeason}`
         );
         const data = await response.json();
 
@@ -152,7 +154,7 @@ export default function NHLStats() {
     }
 
     fetchSchedule();
-  }, [selectedTeam, gameLimit]);
+  }, [selectedTeam, gameLimit, selectedSeason]);
 
   // Fetch time on ice when a player and game are selected
   useEffect(() => {
@@ -237,7 +239,7 @@ export default function NHLStats() {
     fetchTimeOnIce();
   }, [selectedPlayer, selectedGame, players, games]);
 
-  // Fetch player's time on ice history for multiple games when a player is selected
+  // Fetch player's time on ice history for multiple games when a player or season is selected
   useEffect(() => {
     if (!selectedPlayer) return;
 
@@ -247,12 +249,12 @@ export default function NHLStats() {
         setError(null);
 
         console.log(
-          `Fetching game history for player ${selectedPlayer} with limit ${gameLimit}`
+          `Fetching game history for player ${selectedPlayer} with limit ${gameLimit} for season ${selectedSeason}`
         );
 
-        // Fetch the player's games data with the user-selected game limit
+        // Fetch the player's games data with the user-selected game limit and season
         const response = await fetch(
-          `/api/nhl/player/${selectedPlayer}/gameLog?limit=${gameLimit}`
+          `/api/nhl/player/${selectedPlayer}/gameLog?limit=${gameLimit}&season=${selectedSeason}`
         );
 
         if (!response.ok) {
@@ -282,9 +284,9 @@ export default function NHLStats() {
       }
     }
 
-    // Always fetch player game history when a player is selected or game limit changes
+    // Always fetch player game history when a player is selected or game limit/season changes
     fetchPlayerGameHistory();
-  }, [selectedPlayer, gameLimit]);
+  }, [selectedPlayer, gameLimit, selectedSeason]);
 
   const handleTeamChange = (index: number) => {
     if (index >= 0 && index < teams.length) {
@@ -315,6 +317,14 @@ export default function NHLStats() {
     }
   };
 
+  const handleSeasonChange = (index: number) => {
+    const seasons = getAvailableSeasons();
+    if (index >= 0 && index < seasons.length) {
+      setSelectedSeason(seasons[index].value);
+      console.log(`Changing season to ${seasons[index].label}`);
+    }
+  };
+
   // Get player details for the selected player
   const selectedPlayerDetails = selectedPlayer
     ? players.find((p) => p.id === selectedPlayer)
@@ -342,6 +352,7 @@ export default function NHLStats() {
     '50 games',
     'All games',
   ];
+  const seasonItems = getAvailableSeasons().map(s => s.label);
 
   // Find indices for the current selections
   const teamIndex = teams.findIndex((team) => team.abbrev === selectedTeam);
@@ -353,11 +364,12 @@ export default function NHLStats() {
     : 0;
   const limitOptions = [5, 10, 20, 50, 100];
   const limitIndex = limitOptions.indexOf(gameLimit);
+  const seasonIndex = getAvailableSeasons().findIndex(s => s.value === selectedSeason);
 
   return (
-    <div className="p-4 font-sans flex justify-evenly items-start gap-8 flex-wrap">
+    <div className="p-4 font-sans flex flex-col lg:flex-row items-start gap-8">
       {/* Neo-brutalist Header with selectors */}
-      <div className="mb-8 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] xs:flex-[0_0_100%] xl:flex-[0_0_400px] lg:sticky top-0 ">
+      <div className="w-full lg:w-[400px] lg:sticky lg:top-4 border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
         <h1 className="text-5xl font-black mb-2 tracking-tight">
           ICE TIME TRACKER
         </h1>
@@ -377,6 +389,17 @@ export default function NHLStats() {
 
         {/* Selectors in the header */}
         <div className="grid grid-cols-1 gap-4 mt-4 pt-6 border-t-4 border-black">
+          <div className="selector-group">
+            <div className="font-bold text-sm mb-2">SEASON</div>
+            <NeoSelect
+              items={seasonItems}
+              value={seasonIndex >= 0 ? seasonIndex : undefined}
+              onChange={handleSeasonChange}
+              className="w-full"
+              placeholder="Select a season..."
+            />
+          </div>
+
           <div className="selector-group">
             <div className="font-bold text-sm mb-2">TEAM</div>
             <NeoSelect
@@ -442,46 +465,50 @@ export default function NHLStats() {
         )}
       </div>
 
-      {/* TOI Display - show when we have player data and not loading */}
-      {selectedPlayerDetails && !loading && (
-        <TOITracker
-          playerName={`${selectedPlayerDetails.firstName.default} ${selectedPlayerDetails.lastName.default}`}
-          playerNumber={selectedPlayerDetails.sweaterNumber}
-          position={selectedPlayerDetails.positionCode}
-          team={selectedTeam}
-          games={playerGameData}
-          playerId={selectedPlayer?.toString()}
-          gameLimit={gameLimit}
-          singleGameData={
-            timeOnIce
-              ? {
-                  timeOnIce: timeOnIce.timeOnIce,
-                  evenTimeOnIce: timeOnIce.evenTimeOnIce,
-                  powerPlayTimeOnIce: timeOnIce.powerPlayTimeOnIce,
-                  shorthandedTimeOnIce: timeOnIce.shorthandedTimeOnIce,
-                  shifts: timeOnIce.shifts,
-                }
-              : undefined
-          }
-        />
-      )}
+      {/* Main content area */}
+      <div className="flex-1 w-full lg:w-auto min-w-0">
+        {/* TOI Display - show when we have player data and not loading */}
+        {selectedPlayerDetails && !loading && (
+          <TOITracker
+            playerName={`${selectedPlayerDetails.firstName.default} ${selectedPlayerDetails.lastName.default}`}
+            playerNumber={selectedPlayerDetails.sweaterNumber}
+            position={selectedPlayerDetails.positionCode}
+            team={selectedTeam}
+            games={playerGameData}
+            playerId={selectedPlayer?.toString()}
+            gameLimit={gameLimit}
+            season={selectedSeason}
+            singleGameData={
+              timeOnIce
+                ? {
+                    timeOnIce: timeOnIce.timeOnIce,
+                    evenTimeOnIce: timeOnIce.evenTimeOnIce,
+                    powerPlayTimeOnIce: timeOnIce.powerPlayTimeOnIce,
+                    shorthandedTimeOnIce: timeOnIce.shorthandedTimeOnIce,
+                    shifts: timeOnIce.shifts,
+                  }
+                : undefined
+            }
+          />
+        )}
 
-      {/* show a section that shows while loading */}
-      {loading && (
-        <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center flex-[1_1_auto] flex justify-center items-center">
-          <p className="text-2xl font-bold">LOADING STATS...</p>
-          <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
-        </div>
-      )}
+        {/* show a section that shows while loading */}
+        {loading && (
+          <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center flex justify-center items-center">
+            <p className="text-2xl font-bold">LOADING STATS...</p>
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin ml-3"></div>
+          </div>
+        )}
 
-      {/* Show a message when no player is selected */}
-      {!selectedPlayerDetails && !loading && (
-        <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center flex-[1_1_auto]">
-          <p className="text-2xl font-bold">
-            Select a team and player above to view ice time stats!
-          </p>
-        </div>
-      )}
+        {/* Show a message when no player is selected */}
+        {!selectedPlayerDetails && !loading && (
+          <div className="border-8 border-black bg-white p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-center">
+            <p className="text-2xl font-bold">
+              Select a team and player above to view ice time stats!
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

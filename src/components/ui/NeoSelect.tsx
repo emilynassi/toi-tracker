@@ -22,7 +22,9 @@ const NeoSelect = ({
   placeholder = 'Select an option...',
 }: NeoSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,6 +41,23 @@ const NeoSelect = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const spaceBelow = windowHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+
+      // If there's not enough space below (less than 300px) and more space above, open upward
+      if (spaceBelow < 300 && spaceAbove > spaceBelow) {
+        setDropdownPosition('top');
+      } else {
+        setDropdownPosition('bottom');
+      }
+    }
+  }, [isOpen]);
+
   // Determine what to display in the button
   const isPlaceholder = value === undefined;
   const displayText =
@@ -53,6 +72,7 @@ const NeoSelect = ({
       ref={dropdownRef}
     >
       <button
+        ref={buttonRef}
         className={`appearance-none bg-transparent border-2 border-black font-bold py-2 pl-4 pr-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black w-full ${
           disabled ? 'opacity-60 cursor-not-allowed' : ''
         } ${placeholderClass}`}
@@ -85,7 +105,11 @@ const NeoSelect = ({
       </div>
 
       {isOpen && !disabled && items.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+        <div
+          className={`absolute z-10 w-full bg-white border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] max-h-[300px] overflow-y-auto ${
+            dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}
+        >
           {items.map((item, index) => (
             <button
               key={index}
