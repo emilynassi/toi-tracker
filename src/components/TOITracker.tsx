@@ -130,11 +130,30 @@ export function TOITracker({
   const [gamesData, setGamesData] = useState<PlayerGameData[]>(games);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedGameType, setSelectedGameType] = useState<number>(0); // 0 for Regular Season, 1 for Playoffs
+  const [rollingAverageData, setRollingAverageData] = useState<PlayerGameData[]>([]);
 
   // Update games data when props change
   useEffect(() => {
     setGamesData(games);
   }, [games]);
+
+  // Function to fetch rolling average data (always last 5 games)
+  const fetchRollingAverageData = async () => {
+    if (!playerId) return;
+
+    try {
+      const gameType = GAME_TYPES[selectedGameType].id;
+      const seasonParam = season ? `&season=${season}` : '';
+      const response = await fetch(
+        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=5${seasonParam}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch rolling average data');
+      const data = await response.json();
+      setRollingAverageData(data.games || []);
+    } catch (error) {
+      console.error('Error fetching rolling average data:', error);
+    }
+  };
 
   // Function to fetch games data based on the selected game type
   const fetchGameData = async () => {
@@ -144,12 +163,16 @@ export function TOITracker({
       setLoading(true);
       const gameType = GAME_TYPES[selectedGameType].id;
       const seasonParam = season ? `&season=${season}` : '';
-      const response = await fetch(
-        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}${seasonParam}`
-      );
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data = await response.json();
-      setGamesData(data.games || []);
+
+      // Fetch both display data and rolling average data in parallel
+      const [displayResponse] = await Promise.all([
+        fetch(`/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}${seasonParam}`),
+        fetchRollingAverageData()
+      ]);
+
+      if (!displayResponse.ok) throw new Error('Failed to fetch data');
+      const displayData = await displayResponse.json();
+      setGamesData(displayData.games || []);
     } catch (error) {
       console.error('Error fetching game data:', error);
     } finally {
@@ -354,14 +377,13 @@ export function TOITracker({
         ).toFixed(1)
       : '0.0';
 
-  // Calculate 5-game rolling average (most recent 5 games)
+  // Calculate 5-game rolling average from the dedicated rolling average data
   const rollingAverage5 =
-    chartData.length > 0
+    rollingAverageData.length > 0
       ? (
-          chartData
-            .slice(-5) // Get the last 5 games
-            .reduce((sum, game) => sum + game.timeOnIce, 0) /
-          Math.min(chartData.length, 5)
+          rollingAverageData
+            .reduce((sum, game) => sum + convertTimeToMinutes(game.timeOnIce), 0) /
+          rollingAverageData.length
         ).toFixed(1)
       : '0.0';
 
