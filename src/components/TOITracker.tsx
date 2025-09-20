@@ -25,6 +25,7 @@ type TOITrackerProps = {
   games: PlayerGameData[];
   playerId?: string;
   gameLimit?: number;
+  season?: string;
   singleGameData?: {
     timeOnIce: string;
     evenTimeOnIce: string;
@@ -122,6 +123,7 @@ export function TOITracker({
   games = [],
   playerId,
   gameLimit = 10,
+  season,
   singleGameData,
 }: TOITrackerProps) {
   const [highlightedGame, setHighlightedGame] = useState<number | null>(null);
@@ -141,8 +143,9 @@ export function TOITracker({
     try {
       setLoading(true);
       const gameType = GAME_TYPES[selectedGameType].id;
+      const seasonParam = season ? `&season=${season}` : '';
       const response = await fetch(
-        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}`
+        `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}${seasonParam}`
       );
       if (!response.ok) throw new Error('Failed to fetch data');
       const data = await response.json();
@@ -154,12 +157,12 @@ export function TOITracker({
     }
   };
 
-  // Fetch data when player ID, game type, or game limit changes
+  // Fetch data when player ID, game type, game limit, or season changes
   useEffect(() => {
     if (playerId) {
       fetchGameData();
     }
-  }, [playerId, selectedGameType, gameLimit]);
+  }, [playerId, selectedGameType, gameLimit, season]);
 
   // Log the games data for debugging
   console.log('Games data:', gamesData);
@@ -358,7 +361,7 @@ export function TOITracker({
   };
 
   return (
-    <div className="font-sans lg:flex-[1_1_auto] xs:flex-[1_1_100%]">
+    <div className="font-sans w-full">
       {/* Player Card */}
       <div
         className={`border-8 border-black bg-white p-6 mb-10 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]`}

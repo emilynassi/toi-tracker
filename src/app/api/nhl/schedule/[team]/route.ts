@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTeamSchedule } from '@/services/nhlService';
+import { getCurrentSeason } from '@/utils/nhlSeasons';
 
 interface Game {
   id: number;
   gameDate: string;
   gameState: string;
   gameType: number;
-}
-
-// Calculate the current season in YYYYZZZZ format
-function getCurrentSeason(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1; // January is 0
-
-  // If we're in the latter part of the year (July-December), we're in a season that ends next year
-  if (month >= 7) {
-    return `${year}${year + 1}`;
-  } else {
-    // Otherwise we're in a season that started last year (January-June)
-    return `${year - 1}${year}`;
-  }
 }
 
 export async function GET(
