@@ -64,6 +64,13 @@ const convertTimeToMinutes = (timeString: string): number => {
   return minutes + seconds / 60;
 };
 
+// Helper function to convert decimal minutes back to "MM:SS" format
+const convertMinutesToTimeString = (decimalMinutes: number): string => {
+  const minutes = Math.floor(decimalMinutes);
+  const seconds = Math.round((decimalMinutes - minutes) * 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 // Helper function to convert date to Eastern Time
 const formatDateInEasternTime = (dateString: string): string => {
   try {
@@ -130,7 +137,9 @@ export function TOITracker({
   const [gamesData, setGamesData] = useState<PlayerGameData[]>(games);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedGameType, setSelectedGameType] = useState<number>(0); // 0 for Regular Season, 1 for Playoffs
-  const [rollingAverageData, setRollingAverageData] = useState<PlayerGameData[]>([]);
+  const [rollingAverageData, setRollingAverageData] = useState<
+    PlayerGameData[]
+  >([]);
 
   // Update games data when props change
   useEffect(() => {
@@ -166,8 +175,10 @@ export function TOITracker({
 
       // Fetch both display data and rolling average data in parallel
       const [displayResponse] = await Promise.all([
-        fetch(`/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}${seasonParam}`),
-        fetchRollingAverageData()
+        fetch(
+          `/api/nhl/player/${playerId}/gameLog?gameType=${gameType}&limit=${gameLimit}${seasonParam}`
+        ),
+        fetchRollingAverageData(),
       ]);
 
       if (!displayResponse.ok) throw new Error('Failed to fetch data');
@@ -371,21 +382,22 @@ export function TOITracker({
   // Calculate average TOI if we have games data
   const averageTOI =
     chartData.length > 0
-      ? (
+      ? convertMinutesToTimeString(
           chartData.reduce((sum, game) => sum + game.timeOnIce, 0) /
-          chartData.length
-        ).toFixed(1)
-      : '0.0';
+            chartData.length
+        )
+      : '0:00';
 
   // Calculate 5-game rolling average from the dedicated rolling average data
   const rollingAverage5 =
     rollingAverageData.length > 0
-      ? (
-          rollingAverageData
-            .reduce((sum, game) => sum + convertTimeToMinutes(game.timeOnIce), 0) /
-          rollingAverageData.length
-        ).toFixed(1)
-      : '0.0';
+      ? convertMinutesToTimeString(
+          rollingAverageData.reduce(
+            (sum, game) => sum + convertTimeToMinutes(game.timeOnIce),
+            0
+          ) / rollingAverageData.length
+        )
+      : '0:00';
 
   // Format minutes for Y-axis ticks
   const formatYAxis = (value: number) => {
